@@ -1,0 +1,13 @@
+[package]
+name = "rtow"
+version = "0.1.0"
+authors = ["Usi"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nalgebra-glm = "0.11.0"
+num = "0.4"
+crossterm = "0.19.0"
+rand = "0.8.3"
