@@ -8,8 +8,8 @@ pub struct Recti {
 }
 
 pub struct Rectf {
-    pub height: f32,
     pub width: f32,
+    pub height: f32,
 }
 
 pub struct Camera {
@@ -18,28 +18,44 @@ pub struct Camera {
     lower_left_corner: Point3,
     horizontal: Vec3,
     vertical: Vec3,
+    lens_radius: f32,
+    wuv: (Vec3, Vec3, Vec3),
 }
 
 impl Camera {
-    pub fn new() -> Camera {
-        let aspect_ratio = 16.0 / 9.0;
-        let focal_length = 1.0;
-        let screen_width = 400;
+    pub fn new(
+        look_from: &Point3,
+        look_at: &Point3,
+        up: &Vec3,
+        fov: f32,
+        aspect_ratio: f32,
+        aperture: f32,
+        focus_distance: f32,
+    ) -> Camera {
+        let theta = fov.to_radians();
+        let h = (theta / 2.0).tan();
+        let screen_width = 640;
         let screen = Recti {
-            height: (screen_width as f32 / aspect_ratio) as i32,
             width: screen_width,
+            height: (screen_width as f32 / aspect_ratio) as i32,
         };
+        let viewport_height = 2.0 * h;
         let viewport = Rectf {
-            height: 2.0,
-            width: aspect_ratio * 2.0,
+            height: viewport_height,
+            width: aspect_ratio * viewport_height,
         };
-        let origin = Point3::new(0.0, 0.0, 0.0);
-        let horizontal = Vec3::new(viewport.width as f32, 0.0, 0.0);
-        let vertical = Vec3::new(0.0, viewport.height as f32, 0.0);
-        let lower_left_corner = origin
-            - horizontal.scale(0.5)
-            - vertical.scale(0.5)
-            - Vec3::new(0.0, 0.0, focal_length);
+
+        let w = (*look_from - *look_at).unit();
+        let u = cross(up, &w).unit();
+        let v = cross(&w, &u);
+
+        let origin = *look_from;
+        let horizontal = u.scale(viewport.width * focus_distance);
+        let vertical = v.scale(viewport.height * focus_distance);
+        let lower_left_corner =
+            origin - horizontal.scale(0.5) - vertical.scale(0.5) - w.scale(focus_distance);
+
+        let lens_radius = aperture / 2.0;
 
         Self {
             screen,
@@ -47,6 +63,8 @@ impl Camera {
             lower_left_corner,
             horizontal,
             vertical,
+            lens_radius,
+            wuv: (w, u, v),
         }
     }
 
@@ -54,11 +72,14 @@ impl Camera {
         self.screen
     }
 
-    pub fn get_ray(&self, u: f32, v: f32) -> Ray {
+    pub fn get_ray(&self, s: f32, t: f32) -> Ray {
+        let rd = super::random_in_unit_disk().scale(self.lens_radius);
+        let offset = self.wuv.1.scale(rd.x()) + self.wuv.2.scale(rd.y());
         Ray::new(
-            self.origin,
-            self.lower_left_corner + self.horizontal.scale(u) + self.vertical.scale(v)
-                - self.origin,
+            self.origin + offset,
+            self.lower_left_corner + self.horizontal.scale(s) + self.vertical.scale(t)
+                - self.origin
+                - offset,
         )
     }
 }

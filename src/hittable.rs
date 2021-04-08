@@ -39,7 +39,7 @@ pub trait HittableList {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitResult>;
 }
 
-impl HittableList for &[&dyn Hittable] {
+impl HittableList for &[Box<dyn Hittable>] {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitResult> {
         let mut closest: Option<HitResult> = None;
         let mut closest_so_far = t_max;
