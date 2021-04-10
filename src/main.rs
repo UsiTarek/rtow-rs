@@ -22,10 +22,6 @@ use vec3::*;
 
 pub const PI: f32 = 3.14;
 
-pub fn degrees_to_radians(degrees: f32) -> f32 {
-    (180.0 * degrees) / PI
-}
-
 pub fn random_float() -> f32 {
     let mut thread_rng = rand::thread_rng();
     thread_rng.gen_range(0.0f32..1.0f32)
