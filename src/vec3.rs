@@ -1,4 +1,3 @@
-use num::traits::Pow;
 use std::{
     fmt::{self, Display},
     ops::{Add, AddAssign, Index, IndexMut, Mul, Sub, SubAssign},
@@ -53,7 +52,7 @@ impl Vec3 {
     }
 
     pub fn length_squared(&self) -> f32 {
-        self[0].powi(2) + self[1].powi(2) + self[2].pow(2)
+        self.dot(&self)
     }
 
     pub fn length(&self) -> f32 {
@@ -72,18 +71,11 @@ impl Vec3 {
         let x = (self[1] * rhs[2]) - (self[2] * rhs[1]);
         let y = (self[0] * rhs[2]) - (self[2] * rhs[0]);
         let z = (self[1] * rhs[2]) - (self[2] * rhs[1]);
-
         Self::new(x, y, z)
     }
 
     pub fn dot(&self, rhs: &Self) -> f32 {
-        let mut out = 0.0;
-
-        for idx in 0..3 {
-            out += self[idx] * rhs[idx];
-        }
-
-        out
+        self[0] * rhs[0] + self[1] * rhs[1] + self[2] * rhs[2]
     }
 }
 
@@ -149,7 +141,7 @@ impl Mul<f32> for Vec3 {
     type Output = Vec3;
 
     fn mul(self, rhs: f32) -> Self::Output {
-        [self[0] * rhs, self[1] * rhs, self[2] * rhs].into()
+        Self::new(self[0] * rhs, self[1] * rhs, self[2] * rhs)
     }
 }
 

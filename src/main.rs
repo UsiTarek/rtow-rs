@@ -7,7 +7,26 @@ use std::fs::File;
 use std::io::stderr;
 use vec3::{Color, Point3, Vec3};
 
+fn hit_sphere(r: &Ray, center: &Vec3, radius: f32) -> f32 {
+    let oc = r.origin() - *center;
+    let a = r.direction().dot(&r.direction());
+    let b = oc.dot(&r.direction()) * 2.0;
+    let c = oc.dot(&oc) - radius.powi(2);
+    let discr = b.powi(2) - (4.0 * a * c);
+    if discr < 0.0 {
+        -1.0
+    } else {
+        (-b - discr.sqrt()) / (a * 2.0)
+    }
+}
+
 fn ray_color(r: &Ray) -> Color {
+    let c = Point3::new(0.0, 0.0, -1.0);
+    let t = hit_sphere(r, &c, 0.5);
+    if t > 0.0 {
+        let n = (r.at(t) - c).unit();
+        return (n + [1.0, 1.0, 1.0].into()) * 0.5;
+    }
     let unit_direction = r.direction().unit();
     let t = 0.5 * (unit_direction.y() + 1.0);
     return (Color::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Color::new(0.5, 0.7, 1.0) * t);
