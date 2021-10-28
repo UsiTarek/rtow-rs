@@ -2,3 +2,5 @@
 /src/old/*
 /*.lock	
 /.vscode/
+.DS_Store
+img.ppm
