@@ -1,34 +1,68 @@
-use pbr::ProgressBar;
-use std::io::{stderr, Stderr};
+pub mod ray;
+pub mod vec3;
 
-const IMAGE_EXTENT: usize = 256;
+use pbr::ProgressBar;
+use ray::Ray;
+use std::fs::File;
+use std::io::stderr;
+use vec3::{Color, Point3, Vec3};
+
+fn ray_color(r: &Ray) -> Color {
+    let unit_direction = r.direction().unit();
+    let t = 0.5 * (unit_direction.y() + 1.0);
+    return (Color::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Color::new(0.5, 0.7, 1.0) * t);
+}
+
+fn write_ppm_header(file: &mut dyn std::io::Write, width: usize, height: usize) {
+    writeln!(file, "P3\n{} {} \n255\n", width, height).unwrap();
+}
+
+fn write_ppm_color(file: &mut dyn std::io::Write, color: Color) {
+    const CONV_TO_BYTE: f32 = 255.999;
+    let (r, g, b) = (
+        (color.r() * CONV_TO_BYTE) as u8, // r
+        (color.g() * CONV_TO_BYTE) as u8, // g
+        (color.b() * CONV_TO_BYTE) as u8, // b
+    );
+    writeln!(file, "{} {} {}", r, g, b).unwrap();
+}
 
 fn main() {
+    // Image
+    const ASPECT_RATIO: f32 = 16.0 / 9.0;
+    let img_width = 400;
+    let img_height = (img_width as f32 / ASPECT_RATIO) as usize;
+
+    // Camera
+    let viewport_height = 2.0f32;
+    let viewport_width = viewport_height * ASPECT_RATIO;
+    let focal_length = 1.0f32;
+
+    let origin = Point3::new(0.0, 0.0, 0.0);
+    let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
+    let vertical = Vec3::new(0.0, viewport_height, 0.0);
+    let lower_left_corner =
+        origin - (horizontal * 0.5) - (vertical * 0.5) - [0.0, 0.0, focal_length].into();
+
+    // Progress Bar
+    let mut progress_bar = { ProgressBar::on(stderr(), img_height as u64) };
+
     // Render
-    println!("P3\n{} {} \n255\n", IMAGE_EXTENT, IMAGE_EXTENT);
-
-    // Progress bar (stderr)
-    let mut pb: ProgressBar<Stderr> = {
-        let handle = stderr();
-        ProgressBar::on(handle, IMAGE_EXTENT as u64)
-    };
-
-    for y in (0..IMAGE_EXTENT).rev() {
-        pb.inc(); // +1% Progress bar
-        for x in 0..IMAGE_EXTENT {
-            let (r, g, b) = {
-                const CONV_TO_BYTE: f32 = 255.999;
-
-                (
-                    ((x as f32 / (IMAGE_EXTENT - 1) as f32) * CONV_TO_BYTE) as u32, // r
-                    ((y as f32 / (IMAGE_EXTENT - 1) as f32) * CONV_TO_BYTE) as u32, // g
-                    (0.25 * CONV_TO_BYTE) as u32,                                   // b
-                )
-            };
-
-            println!("{} {} {}", r, g, b); // Print .ppm colors (stdout)
+    let mut file = File::create("img.ppm").unwrap();
+    write_ppm_header(&mut file, img_width, img_height);
+    for j in (0..img_height).rev() {
+        for i in 0..img_width {
+            let u = i as f32 / (img_width - 1) as f32;
+            let v = j as f32 / (img_height - 1) as f32;
+            write_ppm_color(
+                &mut file,
+                ray_color(&Ray::new(
+                    origin,
+                    lower_left_corner + (horizontal * u) + (vertical * v) - origin,
+                )),
+            );
         }
+        progress_bar.inc(); // +1% Progress bar
     }
-
-    pb.finish(); // End of progress
+    progress_bar.finish(); // End of progress
 }
