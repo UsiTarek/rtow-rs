@@ -1,32 +1,19 @@
+pub mod hittable;
 pub mod ray;
 pub mod vec3;
 
+use hittable::*;
 use pbr::ProgressBar;
-use ray::Ray;
+use ray::*;
 use std::fs::File;
 use std::io::stderr;
-use vec3::{Color, Point3, Vec3};
+use vec3::*;
 
-fn hit_sphere(r: &Ray, center: &Vec3, radius: f32) -> f32 {
-    let oc = r.origin() - *center;
-    let a = r.direction().dot(&r.direction());
-    let b = oc.dot(&r.direction()) * 2.0;
-    let c = oc.dot(&oc) - radius.powi(2);
-    let discr = b.powi(2) - (4.0 * a * c);
-    if discr < 0.0 {
-        -1.0
-    } else {
-        (-b - discr.sqrt()) / (a * 2.0)
+fn ray_color<'a>(r: &Ray, hittables: &[Box<dyn Hittable>]) -> Color {
+    if let Some(hr) = hittables.hit(r, 0.0, f32::INFINITY) {
+        return 0.5 * (hr.normal + [1.0, 1.0, 1.0].into());
     }
-}
 
-fn ray_color(r: &Ray) -> Color {
-    let c = Point3::new(0.0, 0.0, -1.0);
-    let t = hit_sphere(r, &c, 0.5);
-    if t > 0.0 {
-        let n = (r.at(t) - c).unit();
-        return (n + [1.0, 1.0, 1.0].into()) * 0.5;
-    }
     let unit_direction = r.direction().unit();
     let t = 0.5 * (unit_direction.y() + 1.0);
     return (Color::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Color::new(0.5, 0.7, 1.0) * t);
@@ -52,6 +39,18 @@ fn main() {
     let img_width = 400;
     let img_height = (img_width as f32 / ASPECT_RATIO) as usize;
 
+    // World
+    let world: &[Box<dyn Hittable>] = &[
+        Box::new(Sphere {
+            center: [0.0, 0.0, -1.0].into(),
+            radius: 0.5,
+        }),
+        Box::new(Sphere {
+            center: [0.0, -100.5, -1.0].into(),
+            radius: 100.0,
+        }),
+    ];
+
     // Camera
     let viewport_height = 2.0f32;
     let viewport_width = viewport_height * ASPECT_RATIO;
@@ -75,10 +74,13 @@ fn main() {
             let v = j as f32 / (img_height - 1) as f32;
             write_ppm_color(
                 &mut file,
-                ray_color(&Ray::new(
-                    origin,
-                    lower_left_corner + (horizontal * u) + (vertical * v) - origin,
-                )),
+                ray_color(
+                    &Ray::new(
+                        origin,
+                        lower_left_corner + (horizontal * u) + (vertical * v) - origin,
+                    ),
+                    world,
+                ),
             );
         }
         progress_bar.inc(); // +1% Progress bar

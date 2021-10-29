@@ -1,6 +1,6 @@
 use std::{
     fmt::{self, Display},
-    ops::{Add, AddAssign, Index, IndexMut, Mul, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Sub, SubAssign},
 };
 
 pub type Point3 = Vec3;
@@ -142,6 +142,30 @@ impl Mul<f32> for Vec3 {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Self::new(self[0] * rhs, self[1] * rhs, self[2] * rhs)
+    }
+}
+
+impl Mul<Vec3> for f32 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Self::Output::new(self * rhs[0], self * rhs[1], self * rhs[2])
+    }
+}
+
+impl Div<f32> for Vec3 {
+    type Output = Vec3;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Self::new(self[0] / rhs, self[1] / rhs, self[2] / rhs)
+    }
+}
+
+impl Div<Vec3> for f32 {
+    type Output = Vec3;
+
+    fn div(self, rhs: Vec3) -> Self::Output {
+        Self::Output::new(self / rhs[0], self / rhs[1], self / rhs[2])
     }
 }
 
