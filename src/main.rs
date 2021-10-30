@@ -1,17 +1,22 @@
 pub mod camera;
 pub mod hittable;
+pub mod material;
 pub mod ray;
 pub mod vec3;
 
 use hittable::*;
+use material::*;
 use pbr::ProgressBar;
 use rand::{thread_rng, Rng};
 use ray::*;
-use std::fs::File;
-use std::io::stderr;
+use std::{fs::File, io::stderr, rc::Rc};
 use vec3::*;
 
 use crate::camera::Camera;
+
+fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+    v - 2.0 * v.dot(&n) * n
+}
 
 fn random_float() -> f32 {
     thread_rng().gen_range(0.0..1.0)
@@ -49,19 +54,23 @@ fn random_in_unit_vector() -> Vec3 {
 
 fn ray_color(r: &Ray, hittables: &[Box<dyn Hittable>], depth: i32) -> Color {
     if depth <= 0 {
-        return Color::new(0.0, 0.0, 0.0)
+        return Color::new(0.0, 0.0, 0.0);
     }
 
     if let Some(hr) = hittables.hit(r, 0.001, f32::INFINITY) {
-        let target = hr.hit_point + hr.normal + random_in_unit_vector();
-        return 0.5 * ray_color(&Ray::new(hr.hit_point, target - hr.hit_point), hittables, depth - 1);
+        return {
+            if let Some(scatter) = hr.mat.scatter(r, &hr) {
+                scatter.attenuation * ray_color(&scatter.scattered, hittables, depth - 1)
+            } else {
+                [0.0, 0.0, 0.0].into()
+            }
+        };
     }
 
     let unit_direction = r.direction().unit();
     let t = 0.5 * (unit_direction.y() + 1.0);
     (Color::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Color::new(0.5, 0.7, 1.0) * t)
 }
-
 
 fn write_ppm_header(file: &mut dyn std::io::Write, width: usize, height: usize) {
     writeln!(file, "P3\n{} {} \n255\n", width, height).unwrap();
@@ -93,14 +102,46 @@ fn main() {
 
     // World
     let world: &[Box<dyn Hittable>] = &[
-        Box::new(Sphere {
-            center: [0.0, 0.0, -1.0].into(),
-            radius: 0.5,
-        }),
+        // Ground
         Box::new(Sphere {
             center: [0.0, -100.5, -1.0].into(),
             radius: 100.0,
+            mat: Rc::new(Lambertian {
+                albedo: [0.8, 0.8, 0.0].into(),
+            }),
         }),
+
+        // Center
+        Box::new(Sphere {
+            center: [0.0, 0.0, -1.0].into(),
+            radius: 0.5,
+            mat: Rc::new(Lambertian {
+                albedo: [0.7, 0.3, 0.3].into(),
+            }),
+        }),
+
+        // Left 
+        Box::new(Sphere {
+            center: [-1.0, 0.0, -1.0].into(),
+            radius: 0.5,
+            mat: Rc::new(Metal{
+                albedo: [0.8, 0.8, 0.8].into(),
+                fuzz: 0.3,
+            }),
+
+        }),
+
+        // Right 
+        Box::new(Sphere {
+            center: [1.0, 0.0, -1.0].into(),
+            radius: 0.5,
+            mat: Rc::new(Metal{
+                albedo: [0.8, 0.6, -0.2].into(),
+                fuzz: 1.0
+            }),
+        }),
+
+
     ];
 
     // Camera

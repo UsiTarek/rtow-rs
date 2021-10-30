@@ -1,11 +1,13 @@
-use super::{Point3, Ray, Vec3};
+use super::{Material, Point3, Ray, Vec3};
+use std::rc::Rc;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub t: f32,
     pub hit_point: Point3,
     pub normal: Vec3,
     pub front_face: bool,
+    pub mat: Rc<dyn Material>,
 }
 
 pub trait Hittable {
@@ -15,6 +17,7 @@ pub trait Hittable {
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
+    pub mat: Rc<dyn Material>,
 }
 
 impl Hittable for Sphere {
@@ -63,12 +66,14 @@ impl Hittable for Sphere {
                             outward_normal * -1.0
                         }
                     };
+                    let mat = self.mat.clone();
 
                     Some(HitRecord {
                         t,
                         hit_point,
                         normal,
                         front_face,
+                        mat,
                     })
                 }
                 None => None,
@@ -86,7 +91,7 @@ impl Hittable for &[Box<dyn Hittable>] {
         let mut closest_hit: Option<HitRecord> = None;
         self.iter().for_each(|hittable| {
             if let Some(hr) = hittable.hit(r, t_min, t_max) {
-                if let Some(ch) = closest_hit {
+                if let Some(ch) = closest_hit.clone() {
                     if hr.t < ch.t {
                         closest_hit = Some(hr)
                     }

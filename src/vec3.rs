@@ -1,4 +1,7 @@
-use std::{fmt::{self, Display}, ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Range, Sub, SubAssign}};
+use std::{
+    fmt::{self, Display},
+    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Range, Sub, SubAssign},
+};
 
 use rand::{thread_rng, Rng};
 
@@ -26,11 +29,16 @@ impl Vec3 {
         Self::new(
             thread_rng().gen_range(range.clone()),
             thread_rng().gen_range(range.clone()),
-            thread_rng().gen_range(range.clone())
+            thread_rng().gen_range(range.clone()),
         )
     }
 
-        pub fn x(&self) -> f32 {
+    pub fn nearly_zero(&self) -> bool {
+        let s = 1e-8;
+        (self[0].abs() < s) && (self[1].abs() < s) && (self[2].abs() < s)
+    }
+
+    pub fn x(&self) -> f32 {
         self[0]
     }
 
@@ -145,6 +153,14 @@ impl Sub for Vec3 {
 
     fn sub(self, rhs: Vec3) -> Self::Output {
         Vec3::new(self[0] - rhs[0], self[1] - rhs[1], self[2] - rhs[2])
+    }
+}
+
+impl Mul for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Vec3::new(self[0] * rhs[0], self[1] * rhs[1], self[2] * rhs[2])
     }
 }
 
