@@ -9,8 +9,8 @@ pub struct Camera {
     vertical: Vec3,
 }
 
-impl Camera {
-    pub fn new() -> Camera {
+impl Default for Camera {
+    fn default() -> Camera {
         let aspect_ratio = 16.0 / 9.0;
 
         let viewport_height = 2.0f32;
@@ -30,7 +30,9 @@ impl Camera {
             lower_left_corner,
         }
     }
+}
 
+impl Camera {
     pub fn ray(&self, u: f32, v: f32) -> Ray {
         Ray::new(
             self.origin,

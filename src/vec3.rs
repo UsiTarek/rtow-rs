@@ -1,7 +1,6 @@
-use std::{
-    fmt::{self, Display},
-    ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Sub, SubAssign},
-};
+use std::{fmt::{self, Display}, ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Range, Sub, SubAssign}};
+
+use rand::{thread_rng, Rng};
 
 pub type Point3 = Vec3;
 pub type Color = Vec3;
@@ -19,7 +18,19 @@ impl Vec3 {
         Vec3 { elems: [x, y, z] }
     }
 
-    pub fn x(&self) -> f32 {
+    pub fn rand() -> Vec3 {
+        Self::rand_range(0.0..1.0)
+    }
+
+    pub fn rand_range(range: Range<f32>) -> Vec3 {
+        Self::new(
+            thread_rng().gen_range(range.clone()),
+            thread_rng().gen_range(range.clone()),
+            thread_rng().gen_range(range.clone())
+        )
+    }
+
+        pub fn x(&self) -> f32 {
         self[0]
     }
 
