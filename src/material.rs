@@ -1,3 +1,5 @@
+use crate::{reflect, refract};
+
 use super::{
     hittable::HitRecord, random_in_unit_sphere, random_in_unit_vector, ray::Ray, vec3::Color,
 };
@@ -76,5 +78,49 @@ impl Material for Metal {
         } else {
             None
         }
+    }
+}
+
+pub struct Dieletric {
+    pub ir: f32,
+}
+
+impl Dieletric{
+    fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
+        let r0 = (1.0 - ref_idx) / (1.0 + ref_idx); 
+        let r0 = r0*r0;
+
+        r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
+    }
+}
+
+impl Material for Dieletric {
+    fn scatter(&self, r: &Ray, hr: &HitRecord) -> Option<ScatterResult> {
+        let attenuation = Color::new(1.0, 1.0, 1.0);
+        let refraction_ratio = {
+            if hr.front_face {
+                1.0 / self.ir
+            } else {
+                self.ir
+            }
+        };
+
+        let unit_direction = r.direction().unit();
+        let cos_theta = (unit_direction * -1.0).dot(&hr.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
+
+        let direction = {
+            if (refraction_ratio * sin_theta > 1.0) || Self::reflectance(cos_theta, refraction_ratio) > super::random_float() {
+                reflect(unit_direction, hr.normal)
+            }
+            else {
+                refract(unit_direction, hr.normal, refraction_ratio)
+            }
+        };
+
+        Some(ScatterResult {
+            attenuation,
+            scattered: Ray::new(hr.hit_point, direction),
+        })
     }
 }

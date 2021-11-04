@@ -14,6 +14,13 @@ use vec3::*;
 
 use crate::camera::Camera;
 
+fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
+    let cos_theta = (uv * -1.0).dot(&n).min(1.0);
+    let r_out_perop = etai_over_etat * (uv + cos_theta * n);
+    let r_out_parallel = (r_out_perop.length_squared() - 1.0).abs().sqrt() * -1.0 * n;
+    r_out_perop + r_out_parallel
+}
+
 fn reflect(v: Vec3, n: Vec3) -> Vec3 {
     v - 2.0 * v.dot(&n) * n
 }
@@ -110,38 +117,32 @@ fn main() {
                 albedo: [0.8, 0.8, 0.0].into(),
             }),
         }),
-
         // Center
         Box::new(Sphere {
             center: [0.0, 0.0, -1.0].into(),
             radius: 0.5,
-            mat: Rc::new(Lambertian {
-                albedo: [0.7, 0.3, 0.3].into(),
-            }),
+            mat: Rc::new(Lambertian{ albedo: [0.1, 0.2, 0.5].into() }),
         }),
-
-        // Left 
+        // Left
         Box::new(Sphere {
             center: [-1.0, 0.0, -1.0].into(),
             radius: 0.5,
-            mat: Rc::new(Metal{
-                albedo: [0.8, 0.8, 0.8].into(),
-                fuzz: 0.3,
-            }),
-
+            mat: Rc::new(Dieletric { ir: 1.5 }),
         }),
-
-        // Right 
+        Box::new(Sphere {
+            center: [-1.0, 0.0, -1.0].into(),
+            radius: -0.4,
+            mat: Rc::new(Dieletric { ir: 1.5 }),
+        }),
+        // Right
         Box::new(Sphere {
             center: [1.0, 0.0, -1.0].into(),
             radius: 0.5,
-            mat: Rc::new(Metal{
+            mat: Rc::new(Metal {
                 albedo: [0.8, 0.6, -0.2].into(),
-                fuzz: 1.0
+                fuzz: 0.0,
             }),
         }),
-
-
     ];
 
     // Camera
